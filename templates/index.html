@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            transition: background-color 0.5s, color 0.5s;
+        }
+        body.dark-mode {
+            background-color: #343a40;
+            color: #f8f9fa;
+        }
+        h1, h2 {
+            color: #007bff;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .recommendation-card {
+            transition: transform 0.2s;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #ffffff;
+        }
+        .recommendation-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        .btn-custom:hover {
+            background-color: #0056b3;
+        }
+        .btn-outline-custom {
+            border-color: #007bff;
+            color: #007bff;
+        }
+        .btn-outline-custom:hover {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        .form-control {
+            border-radius: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .filter-label {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-right: 5px;
+            margin-bottom: 10px;
+        }
+        .filter-label .remove-filter {
+            cursor: pointer;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+        #selectedFilters {
+            margin-top: 20px;  /* Adjust this value for more or less space */
+        }
+        #loadingIndicator {
+            display: none; /* Initially hidden */
+        }
+    </style>
+    <title>Movie Recommendation System</title>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Movie Recommendation System</h1>
+
+        <div id="feedbackMessage" class="alert alert-success d-none" role="alert"></div>
+
+        <form method="POST" action="/recommend" class="mb-4" id="recommendationForm">
+            <div class="form-group">
+                <label for="movie_title">Enter a Movie Title:</label>
+                <input type="text" class="form-control" id="movie_title" name="movie_title" placeholder="e.g., Star Wars" required>
+            </div>
+            <button type="submit" class="btn btn-custom btn-block">Get Recommendations</button>
+        </form>
+
+        <h2>Filter Recommendations</h2>
+        <button class="btn btn-outline-custom" data-toggle="modal" data-target="#filterModal">Open Filter</button>
+
+        <!-- Filter Modal -->
+        <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="filterModalLabel">Filter Recommendations</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form method="GET" action="/filter" class="p-3" id="filterForm">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="genre_filter">Select Genre:</label>
+                                <select id="genre_filter" name="genre_filter" class="form-control">
+                                    <option value="">All Genres</option>
+                                    <option value="Action">Action</option>
+                                    <option value="Adventure">Adventure</option>
+                                    <option value="Animation">Animation</option>
+                                    <option value="Comedy">Comedy</option>
+                                    <option value="Drama">Drama</option>
+                                    <option value="Sci-Fi">Sci-Fi</option>
+                                    <option value="Thriller">Thriller</option>
+                                    <option value="Western">Western</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="year_filter">Select Year:</label>
+                                <input type="number" id="year_filter" name="year_filter" class="form-control" placeholder="e.g., 1997" min="1900" max="2024">
+                            </div>
+                            <h5>Selected Filters:</h5>
+                            <div id="dynamicSelectedFilters"></div> <!-- Display selected filters here -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-custom" id="clearFilters">Clear All Filters</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-custom">Apply Filter</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="selectedFilters" class="mb-3"></div> <!-- Selected filters display -->
+
+        <h2>Recommendations</h2>
+        <div id="loadingIndicator" class="text-center mb-3">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+        {% if recommendations %}
+            {% for movie, rating in recommendations.items() %}
+                <div class="recommendation-card">
+                    <h5>{{ movie }}</h5>
+                    <p>Rating: {{ rating | round(2) }}</p>
+                    <form method="POST" action="/rate" class="form-inline">
+                        <input type="hidden" name="movie_title" value="{{ movie }}">
+                        <label for="user_rating" class="mr-2">Rate:</label>
+                        <select name="user_rating" class="form-control mr-2" required>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <button type="submit" class="btn btn-custom">Submit Rating</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">No recommendations available.</div>
+        {% endif %}
+        
+        <button id="toggleTheme" class="btn btn-outline-custom mb-3">Toggle Dark Mode</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let selectedFilters = [];
+
+            // Theme toggle functionality
+            $('#toggleTheme').on('click', function() {
+                $('body').toggleClass('dark-mode');
+            });
+
+            // Handle the filter form submission
+            $('#filterForm').on('submit', function(event) {
+                event.preventDefault();
+
+                const genre = $('#genre_filter').val();
+                const year = $('#year_filter').val();
+
+                // Update dynamic selected filters
+                $('#dynamicSelectedFilters').empty();
+                if (genre) {
+                    selectedFilters.push(`Genre: ${genre}`);
+                    $('#dynamicSelectedFilters').append(`<span class="filter-label">${genre} <span class="remove-filter" data-genre="${genre}">&times;</span></span>`);
+                }
+                if (year) {
+                    selectedFilters.push(`Year: ${year}`);
+                    $('#dynamicSelectedFilters').append(`<span class="filter-label">${year} <span class="remove-filter" data-year="${year}">&times;</span></span>`);
+                }
+
+                // Close the modal
+                $('#filterModal').modal('hide');
+            });
+
+            // Handle removal of selected filters dynamically
+            $('#dynamicSelectedFilters').on('click', '.remove-filter', function() {
+                const filterText = $(this).parent().text().trim();
+                selectedFilters = selectedFilters.filter(f => f !== filterText);
+                $(this).parent().remove();
+            });
+
+            // Clear all filters functionality
+            $('#clearFilters').on('click', function() {
+                $('#genre_filter').val('');
+                $('#year_filter').val('');
+                $('#dynamicSelectedFilters').empty();
+                selectedFilters = [];
+            });
+
+            // Loading indicator on submit
+            $('#recommendationForm').on('submit', function() {
+                $('#loadingIndicator').show();
+                // Simulate loading time; in real use, this should be the AJAX request.
+                setTimeout(() => {
+                    $('#loadingIndicator').hide();
+                    $('#feedbackMessage').removeClass('d-none').text('Recommendations loaded successfully!');
+                }, 2000); // 2 seconds for demonstration
+            });
+        });
+    </script>
+</body>
+</html>
