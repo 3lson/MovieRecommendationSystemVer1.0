@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Profile</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Your Profile</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
+        <h3>Your Rated Movies</h3>
+        <ul class="list-group">
+            {% for movie in rated_movies %}
+                <li class="list-group-item">
+                    <strong>{{ movie.title }}</strong> - Rated: {{ movie.user_rating }} stars
+                </li>
+            {% else %}
+                <li class="list-group-item">You haven't rated any movies yet.</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+    </div>
+</body>
+</html>

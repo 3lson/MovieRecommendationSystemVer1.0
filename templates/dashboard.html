@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Dashboard</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome, {{ current_user.username }}!</h2>
+        <h3>Recommended for You</h3>
+        <ul class="list-group">
+            {% for movie, rating in recommendations.items() %}
+                <li class="list-group-item">
+                    <strong>{{ movie }}</strong> - Predicted Rating: {{ rating | round(2) }} stars
+                </li>
+            {% else %}
+                <li class="list-group-item">No recommendations available yet.</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('profile') }}" class="btn btn-secondary mt-3">View Profile</a>
+    </div>
+</body>
+</html>

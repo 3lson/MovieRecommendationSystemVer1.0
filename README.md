@@ -56,3 +56,39 @@ To run the application locally, follow these steps:
    ```bash
    git clone https://github.com/yourusername/movie-recommendation-system.git
    cd movie-recommendation-system
+   ```
+
+2. Create a virtual environment 
+```bash
+python -m venv venv
+```
+
+3. Active the virtual environment 
+```bash
+source venv/bin/activate
+```
+
+4.Install the required dependencies
+```bash
+pip install -r requirements.txt
+```
+
+5. Run the Flask application 
+```bash
+flask run
+```
+
+6. Access the application in your browser at `http://127.0.0.1:5000`
+
+## Usage
+Once the application is running, you can:
+
+Enter a movie title in the search box to get recommendations.
+Apply genre or year filters to refine the recommendations.
+Rate movies to improve future recommendations.
+
+## Contributing
+If you would like to contribute to this project, feel free to fork the repository and submit a pull request. You can also open an issue if you encounter any problems or have suggestions for improvements.
+
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.

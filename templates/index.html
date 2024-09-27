@@ -18,25 +18,30 @@
         }
         h1, h2 {
             color: #007bff;
+            margin-bottom: 30px; /* Add spacing below headings */
         }
         .container {
             margin-top: 50px;
+            max-width: 800px; /* Set a max-width for better layout */
         }
         .recommendation-card {
             transition: transform 0.2s;
             border: 1px solid #007bff;
-            border-radius: 5px;
+            border-radius: 10px;
             padding: 15px;
             margin: 10px 0;
             background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
         }
         .recommendation-card:hover {
             transform: scale(1.03);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Enhance shadow on hover */
         }
         .btn-custom {
             background-color: #007bff;
             color: #ffffff;
+            border-radius: 20px; /* Rounded buttons */
+            padding: 10px 20px; /* Add padding for a better touch target */
         }
         .btn-custom:hover {
             background-color: #0056b3;
@@ -44,16 +49,20 @@
         .btn-outline-custom {
             border-color: #007bff;
             color: #007bff;
+            border-radius: 20px; /* Rounded buttons */
         }
         .btn-outline-custom:hover {
             background-color: #007bff;
             color: #ffffff;
         }
         .form-control {
-            border-radius: 20px;
+            border-radius: 20px; /* Rounded input fields */
+            box-shadow: none; /* Remove box shadow */
+            border: 1px solid #ced4da; /* Ensure consistent border */
         }
-        .form-group {
-            margin-bottom: 20px;
+        .form-control:focus {
+            border-color: #007bff; /* Highlight input border on focus */
+            box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25); /* Focus shadow */
         }
         .filter-label {
             display: inline-block;
@@ -68,17 +77,48 @@
             cursor: pointer;
             margin-left: 5px;
             font-weight: bold;
+            color: #ffcccc; /* Light red for better visibility */
         }
         #selectedFilters {
-            margin-top: 20px;  /* Adjust this value for more or less space */
+            margin-top: 20px; /* Adjust for spacing */
         }
         #loadingIndicator {
             display: none; /* Initially hidden */
+        }
+        .modal-header {
+            border-bottom: none; /* Remove border for a cleaner look */
+        }
+        .modal-footer {
+            border-top: none; /* Remove border for a cleaner look */
         }
     </style>
     <title>Movie Recommendation System</title>
 </head>
 <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                </li>
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
     <div class="container">
         <h1 class="text-center">Movie Recommendation System</h1>
 
@@ -93,7 +133,7 @@
         </form>
 
         <h2>Filter Recommendations</h2>
-        <button class="btn btn-outline-custom" data-toggle="modal" data-target="#filterModal">Open Filter</button>
+        <button class="btn btn-outline-custom mb-3" data-toggle="modal" data-target="#filterModal">Open Filter</button>
 
         <!-- Filter Modal -->
         <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
@@ -133,7 +173,7 @@
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-custom">Apply Filter</button>
                         </div>
-                    </form>
+                    </form>                    
                 </div>
             </div>
         </div>
@@ -166,71 +206,20 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="alert alert-info">No recommendations available.</div>
+            <p>No recommendations available. Please enter a movie title to get started!</p>
         {% endif %}
-        
-        <button id="toggleTheme" class="btn btn-outline-custom mb-3">Toggle Dark Mode</button>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        $(document).ready(function() {
-            let selectedFilters = [];
-
-            // Theme toggle functionality
-            $('#toggleTheme').on('click', function() {
-                $('body').toggleClass('dark-mode');
-            });
-
-            // Handle the filter form submission
-            $('#filterForm').on('submit', function(event) {
-                event.preventDefault();
-
-                const genre = $('#genre_filter').val();
-                const year = $('#year_filter').val();
-
-                // Update dynamic selected filters
-                $('#dynamicSelectedFilters').empty();
-                if (genre) {
-                    selectedFilters.push(`Genre: ${genre}`);
-                    $('#dynamicSelectedFilters').append(`<span class="filter-label">${genre} <span class="remove-filter" data-genre="${genre}">&times;</span></span>`);
-                }
-                if (year) {
-                    selectedFilters.push(`Year: ${year}`);
-                    $('#dynamicSelectedFilters').append(`<span class="filter-label">${year} <span class="remove-filter" data-year="${year}">&times;</span></span>`);
-                }
-
-                // Close the modal
-                $('#filterModal').modal('hide');
-            });
-
-            // Handle removal of selected filters dynamically
-            $('#dynamicSelectedFilters').on('click', '.remove-filter', function() {
-                const filterText = $(this).parent().text().trim();
-                selectedFilters = selectedFilters.filter(f => f !== filterText);
-                $(this).parent().remove();
-            });
-
-            // Clear all filters functionality
-            $('#clearFilters').on('click', function() {
-                $('#genre_filter').val('');
-                $('#year_filter').val('');
-                $('#dynamicSelectedFilters').empty();
-                selectedFilters = [];
-            });
-
-            // Loading indicator on submit
-            $('#recommendationForm').on('submit', function() {
-                $('#loadingIndicator').show();
-                // Simulate loading time; in real use, this should be the AJAX request.
-                setTimeout(() => {
-                    $('#loadingIndicator').hide();
-                    $('#feedbackMessage').removeClass('d-none').text('Recommendations loaded successfully!');
-                }, 2000); // 2 seconds for demonstration
-            });
-        });
+        // JavaScript for filter management and other interactivity
+        document.getElementById('clearFilters').onclick = function() {
+            document.getElementById('genre_filter').value = '';
+            document.getElementById('year_filter').value = '';
+            document.getElementById('dynamicSelectedFilters').innerHTML = '';
+        };
     </script>
 </body>
 </html>
