@@ -43,6 +43,10 @@ Initially, the recommendation system was solely based on user ratings. However, 
 - **Rating System**: Users can rate the movies they have seen, which will influence future recommendations.
 - **Responsive Design**: The application features a modern and sleek interface built with Bootstrap.
 
+**User Authentication Issues**
+
+Please note that the user authentication feature has some known issues. Users may experience problems when trying to register or log in. We are actively working on fixing these issues in future updates. Please check back later for improvements or refer to the issues section for ongoing discussions regarding authentication.
+
 ## Future Improvements
 - **Enhanced Recommendation Algorithms**: Implement more sophisticated recommendation algorithms (e.g., collaborative filtering) to provide better suggestions.
 - **User Accounts**: Allow users to create accounts to save their ratings and preferences for a more personalized experience.

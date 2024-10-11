@@ -1,39 +1,56 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask_bcrypt import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 import re
+from models import db  # Import the db from models
+# Other necessary imports
+from flask_migrate import Migrate
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'  # Use SQLite for simplicity
-app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a strong key
-db = SQLAlchemy(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///your_database.db'  # Use your actual DB URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize the db instance with the app
+db.init_app(app)
+
+# Set up Flask-Migrate if you're using it
+migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 app.secret_key = '5728424' 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to login page if not logged in
 
 # User model
+
 class User(db.Model, UserMixin):
+    __tablename__ = 'users'  # Explicitly set the table name if necessary
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
+    username = db.Column(db.String(150), nullable=False, unique=True)
+    email = db.Column(db.String(150), nullable=False, unique=True)
     password = db.Column(db.String(150), nullable=False)
-    liked_movies = db.Column(db.Text)  # You can adjust this as needed
-    rated_movies = db.relationship('Movie', secondary='ratings')
+
+    # Assuming a Rating model exists that has a foreign key to User
+    ratings = db.relationship('Rating', backref='user', lazy=True)
+class Movie(db.Model):
+    __tablename__ = 'movie'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
 
 class Rating(db.Model):
+    __tablename__ = 'ratings'  # Explicitly set the table name if necessary
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
-    rating = db.Column(db.Integer, nullable=False)
-
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    movie_id = db.Column(db.Integer, nullable=False)  # Adjust based on your movie model
+    user_rating = db.Column(db.Float, nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.query.get(user_id)  # This is fine if user_id is already an integer
 
 # Routes
 @app.route('/')
@@ -47,28 +64,51 @@ def register():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-        hashed_password = generate_password_hash(password, method='sha256')
-        
-        new_user = User(username=username, email=email, password=hashed_password)
+
+        # Check if the user already exists
+        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            flash('Username or email already exists. Please choose a different one.', 'danger')
+            return redirect(url_for('register'))
+
+        # Create a new user
+        new_user = User(username=username, email=email, password=generate_password_hash(password))
         db.session.add(new_user)
         db.session.commit()
+
         flash('Registration successful! You can now log in.', 'success')
+
         return redirect(url_for('login'))
+
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+
+        print(f"Querying for user with email: {email}")
         user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
+        print(f"User found: {user}")
+
+
+        if user is None:
+            flash('User does not exist.', 'danger')
+            return redirect(url_for('login'))
+
+        if check_password_hash(user.password, password):
             login_user(user)
             flash('Login successful!', 'success')
-            return redirect(url_for('dashboard'))  # Redirect to a dashboard or home page
+            return redirect(url_for('dashboard'))
         else:
             flash('Login failed. Check your email and password.', 'danger')
+            return redirect(url_for('login'))
+
     return render_template('login.html')
+
+
 
 @app.route('/logout')
 @login_required
@@ -78,11 +118,12 @@ def logout():
     return redirect(url_for('home'))
 
 @app.route('/dashboard')
-@login_required
+@login_required  # Ensure the user is logged in
 def dashboard():
-    # Assuming 'get_recommendations' is a function that returns movie recommendations for the user
-    recommendations = get_recommendations(current_user)
-    return render_template('dashboard.html', recommendations=recommendations)
+    # Assuming you have a function to get recommended movies
+    recommended_movies = get_recommendations(current_user)  # Change this as needed
+    
+    return render_template('dashboard.html', current_user=current_user, recommendations=recommend_movies)
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -102,7 +143,7 @@ def get_recommendations(user):
     # Fetch user ratings, and use them to generate personalized recommendations
     user_ratings = Rating.query.filter_by(user_id=user.id).all()
     # Apply your recommendation logic here
-    return recommended_movies  # Return recommended movies for the user
+    return recommend_movies  # Return recommended movies for the user
 
 
 # Load the ratings dataset
@@ -252,4 +293,8 @@ def rate_movie():
     return render_template('index.html', message=f"Thank you for rating '{movie_title}' with {user_rating}.")
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
     app.run(debug=True)
+
